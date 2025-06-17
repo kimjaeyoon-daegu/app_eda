@@ -275,10 +275,15 @@ Page_User     = st.Page(UserInfo, title="My Info", icon="👤", url_path="user-i
 Page_Logout   = st.Page(Logout,   title="Logout",  icon="🔓", url_path="logout")
 Page_EDA      = st.Page(EDA,      title="EDA",     icon="📊", url_path="eda")
 
-if st.session_state.logged_in:
-    pages = [Page_Home, Page_User, Page_Logout, Page_EDA]
-else:
-    pages = [Page_Home, Page_Login, Page_Register, Page_FindPW]
+pages = [
+    Page_Home,
+    Page_Login,
+    Page_Register,
+    Page_FindPW,
+    Page_User,
+    Page_Logout,
+    Page_EDA
+]
 
 selected_page = st.navigation(pages)
 selected_page.run()
