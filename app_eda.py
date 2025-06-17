@@ -37,7 +37,7 @@ if "logged_in" not in st.session_state:
     st.session_state.profile_image_url = ""
 
 # ---------------------
-# Home 클래스 (수정됨)
+# Home 클래스
 # ---------------------
 class Home:
     def __init__(self, login_page, register_page, findpw_page):
@@ -172,58 +172,32 @@ class Logout:
         st.rerun()
 
 # ---------------------
-# EDA 클래스 (수행평가 탭 포함)
+# EDA 클래스
 # ---------------------
 class EDA:
     def __init__(self):
-        st.title("📊 Bike Sharing Demand EDA")
-        uploaded = st.file_uploader("데이터셋 업로드 (train.csv)", type="csv")
-        if uploaded:
-            df = pd.read_csv(uploaded, parse_dates=['datetime'])
-        else:
-            df = None
-
+        st.title("📊 지역별 인구 분석 EDA")
         population_file = st.file_uploader("📂 population_trends.csv 파일 업로드", type="csv", key="popfile")
         if population_file:
-            pop_df = pd.read_csv(population_file)
-            pop_df.replace('-', 0, inplace=True)
-            pop_df[['인구', '출생아수(명)', '사망자수(명)']] = pop_df[['인구', '출생아수(명)', '사망자수(명)']].apply(pd.to_numeric)
-        else:
-            pop_df = None
+            df = pd.read_csv(population_file)
+            df.replace('-', 0, inplace=True)
+            df[['인구', '출생아수(명)', '사망자수(명)']] = df[['인구', '출생아수(명)', '사망자수(명)']].apply(pd.to_numeric)
 
-        tabs = st.tabs([
-            "1. 목적 & 절차",
-            "2. 데이터셋 설명",
-            "3. 데이터 로드 & 품질 체크",
-            "4. Datetime 특성 추출",
-            "5. 시각화",
-            "6. 상관관계 분석",
-            "7. 이상치 제거",
-            "8. 로그 변환",
-            "9. 지역별 인구 분석"
-        ])
+            tabs = st.tabs(["기초 통계", "연도별 추이", "지역별 분석", "변화량 분석", "시각화"])
 
-        with tabs[8]:
-            st.header("📈 지역별 인구 분석")
-            if pop_df is None:
-                st.warning("population_trends.csv 파일을 업로드해주세요.")
-                return
-
-            sub_tabs = st.tabs(["기초 통계", "연도별 추이", "지역별 분석", "변화량 분석", "시각화"])
-
-            with sub_tabs[0]:
+            with tabs[0]:
                 st.subheader("데이터프레임 구조")
                 buffer = io.StringIO()
-                pop_df.info(buf=buffer)
+                df.info(buf=buffer)
                 st.text(buffer.getvalue())
                 st.subheader("기초 통계")
-                st.dataframe(pop_df.describe())
+                st.dataframe(df.describe())
                 st.subheader("결측치 및 중복")
-                st.dataframe(pop_df.isnull().sum())
-                st.write(f"중복 행 수: {pop_df.duplicated().sum()}개")
+                st.dataframe(df.isnull().sum())
+                st.write(f"중복 행 수: {df.duplicated().sum()}개")
 
-            with sub_tabs[1]:
-                nat = pop_df[pop_df['지역'] == '전국'].sort_values('연도')
+            with tabs[1]:
+                nat = df[df['지역'] == '전국'].sort_values('연도')
                 fig, ax = plt.subplots()
                 ax.plot(nat['연도'], nat['인구'], marker='o', label='Actual')
                 last3 = nat.tail(3)
@@ -237,8 +211,8 @@ class EDA:
                 ax.legend()
                 st.pyplot(fig)
 
-            with sub_tabs[2]:
-                recent = pop_df[pop_df['연도'] >= pop_df['연도'].max() - 4]
+            with tabs[2]:
+                recent = df[df['연도'] >= df['연도'].max() - 4]
                 pivot = recent.pivot(index='지역', columns='연도', values='인구')
                 change = pivot.iloc[:, -1] - pivot.iloc[:, 0]
                 change = change.drop('전국', errors='ignore').sort_values(ascending=False)
@@ -248,15 +222,15 @@ class EDA:
                 ax.set_xlabel("Change (thousands)")
                 st.pyplot(fig)
 
-            with sub_tabs[3]:
-                pop_df['인구증감'] = pop_df.groupby('지역')['인구'].diff()
-                top100 = pop_df[pop_df['지역'] != '전국'].dropna().sort_values(by='인구증감', ascending=False).head(100)
+            with tabs[3]:
+                df['인구증감'] = df.groupby('지역')['인구'].diff()
+                top100 = df[df['지역'] != '전국'].dropna().sort_values(by='인구증감', ascending=False).head(100)
                 styled = top100[['연도', '지역', '인구증감']].style.background_gradient(
                     cmap='RdBu', subset=['인구증감']).format("{:,}")
                 st.dataframe(styled)
 
-            with sub_tabs[4]:
-                pivot = pop_df.pivot(index='연도', columns='지역', values='인구')
+            with tabs[4]:
+                pivot = df.pivot(index='연도', columns='지역', values='인구')
                 pivot = pivot.fillna(0).drop(columns=['전국'], errors='ignore')
                 fig, ax = plt.subplots(figsize=(10, 5))
                 pivot.plot.area(ax=ax)
